@@ -1,5 +1,6 @@
 import math
 import random
+
 class Value:
 
     def __init__(self, data, _children=(), _op='', label=''):
