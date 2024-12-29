@@ -13,6 +13,26 @@ class Module:
             if p is not None:
                 p.zero_()
 
+class Sequential(Module):
+    def __init__(self, layers):
+        self.layers = layers
+    
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+    
+    def grads(self):
+        return [g for layer in self.layers for g in layer.grads()]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def backward(self, grad):
+        for layer in reversed(self.layers):
+            grad = layer.backward(grad)
+        return grad
+
 class Embedding(Module):
 
     def __init__(self, num_embeddings, embedding_dim, dtype=torch.float64, generator=None):
@@ -252,3 +272,20 @@ class Flatten(Module):
     
     def backward(self, grad):
         return grad.view(*self.x_shape)
+
+class Optimizer:
+
+    def __init__(self, model, lr):
+        self.model = model
+        self.lr = lr
+    
+    def zero_grad(self):
+        for g in self.model.grads():
+            if g is not None:
+                g.zero_()
+
+class SGD(Optimizer):
+
+    def step(self):
+        for p, g in zip(self.model.parameters(), self.model.grads()):
+            p.data -= self.lr * g
