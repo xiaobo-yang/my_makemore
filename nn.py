@@ -74,7 +74,7 @@ class BatchNorm1d:
     def __call__(self, x):
         if self._training:
             mean = x.mean(dim=0)
-            var = ((x - mean) ** 2).mean(dim=0)
+            var = ((x - mean) ** 2).mean(dim=0) # as torch, we don't use Bessel correction
             
             with torch.no_grad():
                 self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
