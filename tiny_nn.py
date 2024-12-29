@@ -1,10 +1,52 @@
 import torch
 
-class Linear:
+class Module:
+
+    def parameters(self):
+        return []
+    
+    def grads(self):
+        return []
+    
+    def zero_grad(self):
+        for p in self.grads():
+            if p is not None:
+                p.zero_()
+
+class Embedding(Module):
+
+    def __init__(self, num_embeddings, embedding_dim, dtype=torch.float64, generator=None):
+        self.weight = torch.randn(num_embeddings, embedding_dim, dtype=dtype, generator=generator) * (num_embeddings)**-0.5
+        self.dtype = dtype
+        # grads
+        self.weight_grad = None
+
+    def __repr__(self):
+        return f'MyEmbedding(num_embeddings={self.weight.shape[0]}, embedding_dim={self.weight.shape[1]})'
+
+    def parameters(self):
+        return [self.weight]
+    
+    def grads(self):
+        return [self.weight_grad]
+    
+    def __call__(self, x):
+        out = self.weight[x]
+        # backward buffer
+        self.x = x
+        return out
+    
+    def backward(self, grad):
+        self.weight_grad = torch.zeros_like(self.weight)
+        self.weight_grad.index_add_(dim=0, index=self.x.view(-1), source=grad.view(-1, self.weight.shape[1]))
+        return None
+
+class Linear(Module):
 
     def __init__(self, in_features, out_features, bias=True, dtype=torch.float64, generator=None):
         self.weight = torch.randn(in_features, out_features, dtype=dtype, generator=generator) * (in_features)**-0.5
         self.bias = torch.zeros(out_features, dtype=dtype) * 0 if bias else None
+        self.dtype = dtype
         # grads
         self.weight_grad = None
         self.bias_grad = None
@@ -48,7 +90,7 @@ class Linear:
             self.bias_grad = grad.sum(dim=0)
         return x_grad
 
-class BatchNorm1d:
+class BatchNorm1d(Module):
     def __init__(self, in_features, eps=1e-5, momentum=0.001, dtype=torch.float64): # manual bn need fp64
         self.weight = torch.ones(in_features, dtype=dtype)
         self.bias = torch.zeros(in_features, dtype=dtype)
@@ -102,7 +144,7 @@ class BatchNorm1d:
         dx = ((grad - self.bias_grad / b) - x_normalized * (self.weight_grad / b)) * inv_std * self.weight
         return dx
 
-class LayerNorm:
+class LayerNorm(Module):
     def __init__(self, in_features, eps=1e-5, dtype=torch.float64):
         self.weight = torch.ones(in_features, dtype=dtype)
         self.bias = torch.zeros(in_features, dtype=dtype)
@@ -143,15 +185,7 @@ class LayerNorm:
         dx = ((grad - grad.mean(dim=-1, keepdim=True)) - x_normalized * (x_normalized * grad).mean(dim=-1, keepdim=True)) * inv_std * self.weight
         return dx
 
-class Func:
-
-    def parameters(self):
-        return []
-    
-    def grads(self):
-        return []
-
-class Tanh(Func):
+class Tanh(Module):
 
     def __repr__(self):
         return f'MyTanh()'
@@ -166,7 +200,7 @@ class Tanh(Func):
         x_grad = grad * (1 - self.out**2)
         return x_grad
 
-class ReLU(Func):
+class ReLU(Module):
 
     def __repr__(self):
         return f'MyReLU()'
@@ -181,7 +215,7 @@ class ReLU(Func):
         x_grad = grad * (self.out > 0).float()
         return x_grad
 
-class CrossEntropyLoss(Func):
+class CrossEntropyLoss(Module):
 
     def __repr__(self):
         return f'MyCrossEntropyLoss()'
@@ -205,3 +239,16 @@ class CrossEntropyLoss(Func):
         x_grad = x_grad / b * grad
         return x_grad
         
+class Flatten(Module):
+
+    def __repr__(self):
+        return f'MyFlatten()'
+    
+    def __call__(self, x):
+        out = x.view(x.shape[0], -1)
+        # backward buffer
+        self.x_shape = x.shape
+        return out
+    
+    def backward(self, grad):
+        return grad.view(*self.x_shape)
