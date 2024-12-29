@@ -1,5 +1,11 @@
 import torch
 
+"""
+    This is a tiny version of torch, only for understanding the mechanism of backpropagation.
+    It is not a complete version of torch, and it is not recommended to use it for real projects.
+"""
+
+# ---------- Module ----------
 class Module:
 
     def parameters(self):
@@ -273,6 +279,7 @@ class Flatten(Module):
     def backward(self, grad):
         return grad.view(*self.x_shape)
 
+# ---------- Optimizer ----------
 class Optimizer:
 
     def __init__(self, model, lr):
