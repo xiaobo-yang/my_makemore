@@ -23,6 +23,9 @@ class Sequential(Module):
     def __init__(self, layers):
         self.layers = layers
     
+    def __getitem__(self, index):
+        return self.layers[index]
+    
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
     
@@ -141,12 +144,15 @@ class BatchNorm1d(Module):
     
     def __call__(self, x):
         if self._training:
+            b, d = x.shape
+            assert b > 1, "Batch size must be greater than 1 in training mode"
             mean = x.mean(dim=0)
             var = ((x - mean) ** 2).mean(dim=0) # as torch, we don't use Bessel correction
             
             with torch.no_grad():
                 self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
-                self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var
+                self.running_var = (1 - self.momentum) * self.running_var + self.momentum * var * (b / (b - 1)) 
+                # In BN paper, they use Bessel correction for inference but not training, it's confusing
         else:
             mean = self.running_mean
             var = self.running_var
