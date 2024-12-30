@@ -107,16 +107,20 @@ class Linear(Module):
     def backward(self, grad):
         """
             Input:
-                x: input of current layer
-                out: output of current layer
                 grad: grad from next layer
             Output:
                 x_grad: grad back to previous layer
         """
+        assert grad.ndim == 2 or grad.ndim == 3, f'Grad tensor has dim {grad.ndim}, need to check.'
+        self.weight_grad = self.x.transpose(-2, -1) @ grad
         x_grad = grad @ self.weight.T
-        self.weight_grad = self.x.T @ grad
-        if self.bias is not None:
-            self.bias_grad = grad.sum(dim=0)
+        if grad.ndim == 2:
+            if self.bias is not None:
+                self.bias_grad = grad.sum(dim=0)
+        elif grad.ndim == 3:
+            self.weight_grad = self.weight_grad.sum(dim=0)
+            if self.bias is not None:
+                self.bias_grad = grad.sum(dim=[0, 1])
         return x_grad
 
 class BatchNorm1d(Module):
@@ -143,11 +147,17 @@ class BatchNorm1d(Module):
         return [self.weight_grad, self.bias_grad]
     
     def __call__(self, x):
+        assert x.ndim == 2 or x.ndim == 3, f'Input tensor has dim {x.ndim}, need to check.'
         if self._training:
-            b, d = x.shape
+            if x.ndim == 2:
+                dim = 0
+                b = x.shape[0]
+            elif x.ndim == 3:
+                dim = (0, 1)
+                b = x.shape[0] * x.shape[1]
             assert b > 1, "Batch size must be greater than 1 in training mode"
-            mean = x.mean(dim=0)
-            var = ((x - mean) ** 2).mean(dim=0) # as torch, we don't use Bessel correction
+            mean = x.mean(dim)
+            var = ((x - mean) ** 2).mean(dim) # as torch, we don't use Bessel correction
             
             with torch.no_grad():
                 self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
@@ -162,16 +172,18 @@ class BatchNorm1d(Module):
         out = self.weight * x_normalized + self.bias
         
         # backward buffer
-        self.inv_std = inv_std
-        self.x_normalized = x_normalized
+        if self._training:
+            self.inv_std = inv_std
+            self.x_normalized = x_normalized
+            self.b = b
+            self.dim = dim
         return out
 
     def backward(self, grad):
-        inv_std, x_normalized = self.inv_std, self.x_normalized
-        b, d = x_normalized.shape
+        b, dim, inv_std, x_normalized = self.b, self.dim, self.inv_std, self.x_normalized
         
-        self.weight_grad = (x_normalized * grad).sum(dim=0)
-        self.bias_grad = grad.sum(dim=0)
+        self.weight_grad = (x_normalized * grad).sum(dim)
+        self.bias_grad = grad.sum(dim)
         
         dx = ((grad - self.bias_grad / b) - x_normalized * (self.weight_grad / b)) * inv_std * self.weight
         return dx
@@ -209,6 +221,7 @@ class LayerNorm(Module):
         return out
 
     def backward(self, grad):
+        assert grad.ndim == 2, f'Grad tensor has dim {grad.ndim}, need to check.'
         inv_std, x_normalized = self.inv_std, self.x_normalized
         
         self.weight_grad = (x_normalized * grad).sum(dim=tuple(range(x_normalized.ndim-1))) # all dims except last
