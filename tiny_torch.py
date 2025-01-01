@@ -45,7 +45,7 @@ class Sequential(Module):
 class Embedding(Module):
 
     def __init__(self, num_embeddings, embedding_dim, dtype=torch.float64, generator=None):
-        self.weight = torch.randn(num_embeddings, embedding_dim, dtype=dtype, generator=generator) * (num_embeddings)**-0.5
+        self.weight = torch.randn(num_embeddings, embedding_dim, dtype=dtype, generator=generator)
         self.dtype = dtype
         # grads
         self.weight_grad = None
