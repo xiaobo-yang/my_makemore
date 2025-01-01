@@ -283,6 +283,35 @@ class CrossEntropyLoss(Module):
         x_grad[range(b), self.y] -= 1
         x_grad = x_grad / b * grad
         return x_grad
+
+class CrossEntropyLoss3d(Module):
+
+    def __repr__(self):
+        return f'MyCrossEntropyLoss()'
+
+    def __call__(self, logits, y, ignore_index=-1):
+        assert logits.ndim == 3, 'only verify for 3d logits (B, T, C)'
+        B, T, V = logits.shape
+        max_logits = logits.max(dim=-1, keepdim=True).values
+        probs = (logits - max_logits).softmax(dim=-1)
+        mask = (y != ignore_index)
+        loss = -probs[torch.arange(B)[:, None], torch.arange(T)[None, :], y].log() * mask # indices also need to be broadcasted, we use [None, :]
+        loss = loss.sum() / mask.sum()
+        # backward buffer
+        self.probs = probs
+        self.y = y
+        self.mask = mask
+        return loss
+        
+    
+    def backward(self, grad=1.0): # grad is the gradient of the loss function, usually 1.0
+        probs, y, mask = self.probs, self.y, self.mask
+        B, T, V = probs.shape
+        x_grad = probs.clone()
+        x_grad[torch.arange(B)[:, None], torch.arange(T)[None, :], y] -= 1.0
+        x_grad = x_grad * mask.unsqueeze(-1)
+        x_grad = x_grad / mask.sum() * grad
+        return x_grad
         
 class Flatten(Module):
 
