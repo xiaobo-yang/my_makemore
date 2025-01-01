@@ -260,6 +260,21 @@ class ReLU(Module):
         x_grad = grad * (self.out > 0).float()
         return x_grad
 
+class Sigmoid(Module):
+
+    def __repr__(self):
+        return f'MySigmoid()'
+    
+    def __call__(self, x):
+        out = x.sigmoid()
+        # backward buffer
+        self.out = out
+        return out
+    
+    def backward(self, grad):
+        x_grad = grad * self.out * (1 - self.out)
+        return x_grad
+
 class CrossEntropyLoss(Module):
 
     def __repr__(self):
