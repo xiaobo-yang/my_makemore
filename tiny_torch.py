@@ -232,7 +232,6 @@ class LayerNorm(Module):
         return out
 
     def backward(self, grad):
-        assert grad.ndim == 2, f'Grad tensor has dim {grad.ndim}, need to check.'
         inv_std, x_normalized = self.inv_std, self.x_normalized
         
         self.weight_grad = (x_normalized * grad).sum(dim=tuple(range(x_normalized.ndim-1))) # all dims except last
