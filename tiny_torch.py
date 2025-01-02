@@ -1,3 +1,4 @@
+import math
 import torch
 
 """
@@ -18,6 +19,10 @@ class Module:
         for p in self.grads():
             if p is not None:
                 p.zero_()
+    
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
+    
 
 class Sequential(Module):
     def __init__(self, layers):
@@ -26,13 +31,19 @@ class Sequential(Module):
     def __getitem__(self, index):
         return self.layers[index]
     
+    def __len__(self):
+        return len(self.layers)
+    
+    def __iter__(self):
+        return iter(self.layers)
+    
     def parameters(self):
         return [p for layer in self.layers for p in layer.parameters()]
     
     def grads(self):
         return [g for layer in self.layers for g in layer.grads()]
 
-    def __call__(self, x):
+    def forward(self, x):
         for layer in self.layers:
             x = layer(x)
         return x
@@ -59,7 +70,7 @@ class Embedding(Module):
     def grads(self):
         return [self.weight_grad]
     
-    def __call__(self, x):
+    def forward(self, x):
         out = self.weight[x]
         # backward buffer
         self.x = x
@@ -95,7 +106,7 @@ class Linear(Module):
         else:
             return [self.weight_grad]
     
-    def __call__(self, x):
+    def forward(self, x):
         if self.bias is not None:
             out = x @ self.weight + self.bias
         else:
@@ -146,7 +157,7 @@ class BatchNorm1d(Module):
     def grads(self):
         return [self.weight_grad, self.bias_grad]
     
-    def __call__(self, x):
+    def forward(self, x):
         assert x.ndim == 2 or x.ndim == 3, f'Input tensor has dim {x.ndim}, need to check.'
         if self._training:
             if x.ndim == 2:
@@ -207,7 +218,7 @@ class LayerNorm(Module):
     def grads(self):
         return [self.weight_grad, self.bias_grad]
     
-    def __call__(self, x):
+    def forward(self, x):
         mean = x.mean(dim=-1, keepdim=True)
         var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
             
@@ -235,7 +246,7 @@ class Tanh(Module):
     def __repr__(self):
         return f'MyTanh()'
     
-    def __call__(self, x):
+    def forward(self, x):
         out = x.tanh()
         # backward buffer
         self.out = out
@@ -250,7 +261,7 @@ class ReLU(Module):
     def __repr__(self):
         return f'MyReLU()'
     
-    def __call__(self, x):
+    def forward(self, x):
         out = x.relu()
         # backward buffer
         self.out = out
@@ -260,12 +271,36 @@ class ReLU(Module):
         x_grad = grad * (self.out > 0).float()
         return x_grad
 
+class GELU(Module):
+    def __repr__(self):
+        return f'MyGELU()'
+    
+    def forward(self, x):
+        """
+        Tanh approximation of GELU
+        """
+        t = (math.sqrt(2.0 / math.pi) * (x + 0.044715 * x**3)).tanh()
+        phi = 0.5 * (1.0 + t)
+        out = x * phi
+        # backward buffer
+        self.x = x
+        self.t = t
+        self.phi = phi
+        return out
+    
+    def backward(self, grad):
+        x, t, phi = self.x, self.t, self.phi
+        grad_x =  grad * phi
+        grad_phi = grad * x * 0.5 * (1.0 - t**2) * (math.sqrt(2.0 / math.pi) * (1 + 0.044715 * 3 * x**2))
+        x_grad = grad_x + grad_phi
+        return x_grad
+
 class Sigmoid(Module):
 
     def __repr__(self):
         return f'MySigmoid()'
     
-    def __call__(self, x):
+    def forward(self, x):
         out = x.sigmoid()
         # backward buffer
         self.out = out
@@ -280,7 +315,7 @@ class CrossEntropyLoss(Module):
     def __repr__(self):
         return f'MyCrossEntropyLoss()'
 
-    def __call__(self, x, y):
+    def forward(self, x, y):
         xmax = x.max(dim=-1, keepdim=True)[0]
         exp_l = (x - xmax).exp()
         count = exp_l.sum(dim=-1, keepdim=True)
@@ -304,7 +339,7 @@ class CrossEntropyLoss3d(Module):
     def __repr__(self):
         return f'MyCrossEntropyLoss()'
 
-    def __call__(self, logits, y, ignore_index=-1):
+    def forward(self, logits, y, ignore_index=-1):
         assert logits.ndim == 3, 'only verify for 3d logits (B, T, C)'
         B, T, V = logits.shape
         max_logits = logits.max(dim=-1, keepdim=True).values
@@ -333,7 +368,7 @@ class Flatten(Module):
     def __repr__(self):
         return f'MyFlatten()'
     
-    def __call__(self, x):
+    def forward(self, x):
         out = x.view(x.shape[0], -1)
         # backward buffer
         self.x_shape = x.shape
