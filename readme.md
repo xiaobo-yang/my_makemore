@@ -7,6 +7,7 @@ This repo is a learning note of Andrej Karpathy's [Make More](https://github.com
   - `micrograd.py`: a minimalistic autograd engine for scalar
   - `tiny_torch.py`: a minimalistic autograd engine for tensor
   - `tiny_torch_nn.py`: a minimalistic implementation of different models using `tiny_torch.py`
+  - `micro_torch/`: try to implement a minimalistic autograd data structure like torch tensor.
 - Play with models
   - `bigram.py` and `mlp_basic.ipynb`: a simple language model first glance
   - `mlp_diagnosis.ipynb` and `mlp_diagnosis_clean.ipynb`: some diagnosis of the MLP model, the latter one uses `tiny_torch.py`
