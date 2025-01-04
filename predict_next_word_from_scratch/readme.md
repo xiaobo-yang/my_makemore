@@ -20,4 +20,4 @@ Building these models from scratch isn't just an exercise - it's the best way to
 
 ## Acknowledgement
 
-This project is largely inspired by Andrej Karpathy's excellent [makemore](https://github.com/karpathy/makemore) project. I added more models and more backpropagation components to the project.
+This project is largely inspired by Andrej Karpathy's excellent [makemore](https://github.com/karpathy/makemore) project. I add more models and more backpropagation components to the project.
