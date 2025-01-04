@@ -6,11 +6,11 @@ Ever wondered how GPT predicts the next word? Let's build one from the ground up
 
 We'll journey through increasingly sophisticated models, implementing each one from scratch:
 
-- 🎯 Bigram Model - The simplest way to predict text
-- 🧠 Multi-Layer Perceptron (MLP) - Adding some neural magic
-- ↩️ RNN - Teaching our model to remember
-- 🔄 GRU - A smarter way to handle sequences
-- ⚡ Transformer - The architecture that revolutionized NLP
+- Bigram Model - A look-up table to predict the next word.
+- MLP ([Bengio et al. 2003](https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf))
+- RNN ([Mikolov et al. 2010](https://www.fit.vutbr.cz/research/groups/speech/publi/2010/mikolov_interspeech2010_IS100722.pdf))
+- GRU ([Kyunghyun Cho et al. 2014](https://arxiv.org/abs/1409.1259))
+- Transformer ([Vaswani et al. 2017](https://arxiv.org/abs/1706.03762))
 
 All models are trained on a vocabulary of English words using `tiny_torch` - our minimalist PyTorch implementation that helps understand the fundamentals.
 

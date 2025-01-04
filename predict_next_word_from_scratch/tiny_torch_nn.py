@@ -6,6 +6,35 @@ Implementation of backward pass of the models from scratch.
 Forward pass of the models are adapted from https://github.com/karpathy/makemore
 """
 
+# ---------------------------------------- Bigram ------------------------------------------------------
+class Bigram(Module):
+    def __init__(self, config):
+        super().__init__()
+        self.block_size = config.block_size
+        self.wte = Embedding(config.vocab_size + 1, config.n_embd, dtype=config.dtype) # token embeddings table
+        self.lm_head = Linear(config.n_embd, config.vocab_size, bias=False, dtype=config.dtype)
+        self.lm_head.weight.data *= 0.1
+        n_params = sum(p.numel() for p in self.parameters())
+        print("number of bigram parameters: %d" % (n_params,))
+    
+    def parameters(self):
+        return list(self.wte.parameters()) + list(self.lm_head.parameters())
+    
+    def grads(self):
+        return list(self.wte.grads()) + list(self.lm_head.grads())
+    
+    def get_block_size(self):
+        return self.block_size
+    
+    def forward(self, idx):
+        tok_emb = self.wte(idx)
+        logits = self.lm_head(tok_emb)
+        return logits
+    
+    def backward(self, dlogits):
+        dwte = self.lm_head.backward(dlogits)
+        self.wte.backward(dwte)
+
 # ---------------------------------------- MLP ------------------------------------------------------
 class MLP(Module):
 
@@ -36,7 +65,7 @@ class MLP(Module):
     def get_block_size(self):
         return self.block_size
 
-    def forward(self, idx, targets=None):
+    def forward(self, idx):
         # gather the word embeddings of the previous 3 words
         idx_buf = []
         embs = []
@@ -410,10 +439,9 @@ class Transformer(Module):
         return self.block_size
 
     def forward(self, idx):
-        device = idx.device
         b, t = idx.size()
         assert t <= self.block_size, f"Cannot forward sequence of length {t}, block size is only {self.block_size}"
-        pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
+        pos = torch.arange(0, t, dtype=torch.long).unsqueeze(0) # shape (1, t)
 
         # forward the GPT model itself
         tok_emb = self.wte(idx) # token embeddings of shape (b, t, n_embd)
