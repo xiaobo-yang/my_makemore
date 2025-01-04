@@ -2,8 +2,8 @@ import math
 import torch
 
 """
-    This is a tiny version of torch, only for understanding the mechanism of backpropagation.
-    It is not a complete version of torch, and it is not recommended to use it for real projects.
+This is a tiny version of Torch, designed solely for understanding the mechanism of backpropagation. 
+It is not a complete version of Torch and is not recommended for use in real projects.
 """
 
 # ---------- Module ----------

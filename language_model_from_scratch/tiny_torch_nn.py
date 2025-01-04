@@ -2,7 +2,8 @@ import torch
 from tiny_torch import *
 
 """
-Forward pass of the models in https://github.com/karpathy/makemore
+Implementation of backward pass of the models from scratch.
+Forward pass of the models are adapted from https://github.com/karpathy/makemore
 """
 
 # ---------------------------------------- MLP ------------------------------------------------------
@@ -35,8 +36,7 @@ class MLP(Module):
     def get_block_size(self):
         return self.block_size
 
-    def __call__(self, idx, targets=None):
-
+    def forward(self, idx, targets=None):
         # gather the word embeddings of the previous 3 words
         idx_buf = []
         embs = []
@@ -46,11 +46,9 @@ class MLP(Module):
             embs.append(tok_emb)
             idx = torch.roll(idx, 1, 1)
             idx[:, 0] = self.vocab_size # special <BLANK> token
-
         # concat all of the embeddings together and pass through an MLP
         x = torch.cat(embs, -1) # (b, t, n_embd * block_size)
         logits = self.mlp(x)
-
         # backward buffer
         self.idx_buf = torch.cat(idx_buf, -1) # (b, t, t)
 
@@ -95,7 +93,7 @@ class RNN(Module):
     def get_block_size(self):
         return self.block_size
 
-    def __call__(self, x):
+    def forward(self, x):
         b, t = x.size()
         emb = self.wte(x) # (b, t, n_embd)
         # sequentially iterate over the inputs and update the RNN state each tick
@@ -180,7 +178,7 @@ class GRU(Module):
     def get_block_size(self):
         return self.block_size
 
-    def __call__(self, x):
+    def forward(self, x):
         b, t = x.size()
         emb = self.wte(x) # (b, t, n_embd)
         # sequentially iterate over the inputs and update the RNN state each tick
