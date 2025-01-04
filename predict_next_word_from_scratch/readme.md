@@ -1,20 +1,23 @@
-# Introduction
+# Predict Next Word from Scratch 🚀
 
-This is a simple implementation of a language model from scratch. I'll build a language model from simplest bigram model to more complex transformer model, step by step, involving the following topics:
+Ever wondered how GPT predicts the next word? Let's build one from the ground up! This project is your guided tour through the evolution of language models - from the simplest bigram to the mighty transformer.
 
-- Backpropagation from scratch.
-- Bigram
-- MLP
-- RNN
-- GRU
-- Transformer
+## What's Inside?
 
+We'll journey through increasingly sophisticated models, implementing each one from scratch:
 
+- 🎯 Bigram Model - The simplest way to predict text
+- 🧠 Multi-Layer Perceptron (MLP) - Adding some neural magic
+- ↩️ RNN - Teaching our model to remember
+- 🔄 GRU - A smarter way to handle sequences
+- ⚡ Transformer - The architecture that revolutionized NLP
 
-# Data
+All models are trained on a vocabulary of English words using `tiny_torch` - our minimalist PyTorch implementation that helps understand the fundamentals.
 
-The data is a list of Englishwords.
+## Why From Scratch?
 
-# Acknowledgement
+Building these models from scratch isn't just an exercise - it's the best way to truly understand how modern language models work. Each component is implemented with clear, educational code that prioritizes learning over efficiency.
 
-This project is largely inspired by [makemore](https://github.com/karpathy/makemore).
+## Acknowledgement
+
+This project is largely inspired by Andrej Karpathy's excellent [makemore](https://github.com/karpathy/makemore) project. I added more models and more backpropagation components to the project.
